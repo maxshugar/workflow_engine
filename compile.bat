@@ -1,0 +1,1 @@
+g++ tests/execute.cc task/task.cc -o main.exe
