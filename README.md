@@ -23,3 +23,7 @@ As previously discussed, remote code execution poses threats to the hosts system
 - Virtualisation (Safest but most expensive) (Top down approach)
 - Docker Containers (Bottom up approach)
 - Language specific sandboxed implementations (PyPy)
+
+## Worker Pool - 24/01/21
+
+Simultaneous task execution will be achieved via a worker pool.
