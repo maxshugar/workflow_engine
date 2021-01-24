@@ -1,1 +1,1 @@
-g++ tests/execute.cc task/task.cc -o main.exe
+g++ tests/python_exec_str.cc -o main.exe -IC:\Python39\include -L. -lpython39
