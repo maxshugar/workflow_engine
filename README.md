@@ -27,3 +27,24 @@ As previously discussed, remote code execution poses threats to the hosts system
 ## Worker Pool - 24/01/21
 
 Simultaneous task execution will be achieved via a worker pool.
+
+## Sequencing - 10/02/21
+
+Over two weeks have passed since I last worked on this project. In hindsight, it would be easier to use node.js for the workflow engine. The students proficiency in javascript will make development faster, which is why Node.js will be used throughout this system going forwards. The system is simply a proof of concept behind schedule, therefor security and performance
+will have to be made less of a priority.
+
+## Sequencing - 11/02/21
+
+I've been unable to find a decent javascript module which supports debugging therefor I will have to resort back to C++ integrated as an addon which will invoke the CPython library.
+
+## Duktape Script Execution - 20/02/21
+
+Considerable progress has been made with script execution. The student is using Duktape, a light weight javascript interpreter to execute scripts. He has managed
+to execute a js scring using Express.js, which routes the request to a c++ addon that handles the execution of the script. The response is then returned back to the client.
+
+## Duktape Debugger - 21/02/21
+Duktape includes debugging functionality, which allows breakpoints to be set and the program flow to be controlled. The student is currently studying the following example (https://github.com/svaarala/duktape/tree/6ffafec98fb329db86865230365acec19e16f4a4/examples/debug-trans-dvalue), which acts as an interface with the debugger. So far it is unclear how this will work.
+
+## v8 Working! - 10/03/21
+
+The student finally managed to compile embed v8 as a node.js C++ addon! A web request can be sent to a rest api written using express to a compiled c++ addon which creates a new v8 context and executes the script. V8 has a try catch component which the student has used to catch errors. After the script has been executed, its output is returned as a response to the HTTP client. The next challenge will be to debug the javascript code running using v8. There does not appear to be any examples online. The only relevant material available appears to be the source code for d8, which is a shell application written using v8. Tom suggests I make a start on the web application and come back to debugging.
