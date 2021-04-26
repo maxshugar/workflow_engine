@@ -10,6 +10,7 @@ module.exports = {
             vm.createContext(context);
             const code = 'ret = engine.execute(script);';
             vm.runInContext(code, context);
+            console.log(context.ret);
             return context.ret;
         } catch(err) {
             console.log(err)
