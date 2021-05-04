@@ -1,1 +1,0 @@
-g++ -o hello_world.exe hello_world.cpp -L v8.redist-v142-x64.8.4.371.15/lib/Release -L v8-v142-x64.8.4.371.15/lib/Release -I v8-v142-x64.8.4.371.15/include -std=c++11

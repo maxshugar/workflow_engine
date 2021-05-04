@@ -48,3 +48,7 @@ Duktape includes debugging functionality, which allows breakpoints to be set and
 ## v8 Working! - 10/03/21
 
 The student finally managed to compile embed v8 as a node.js C++ addon! A web request can be sent to a rest api written using express to a compiled c++ addon which creates a new v8 context and executes the script. V8 has a try catch component which the student has used to catch errors. After the script has been executed, its output is returned as a response to the HTTP client. The next challenge will be to debug the javascript code running using v8. There does not appear to be any examples online. The only relevant material available appears to be the source code for d8, which is a shell application written using v8. Tom suggests I make a start on the web application and come back to debugging.
+
+## Issues with V8 Debugging - 02/05/21
+The student has studied the v8 source code in an attempt to understand how debugging functionaly has been implemented. Given the sheer volume of code, and minimal documentation, the student has hit a brick wall with regards to implementing debugger functionality. Given that the student has two months remaining on the project, it would make sense to discontinue studying the V8 source code and devise a plan to implement debugging in a different way, potentially using a different scripting language. The student will study how CodeSandbox achieves debugging functionality for all of its scripting languages, and re-consider the debugging functionality available for python.
+

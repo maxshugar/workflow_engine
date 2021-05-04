@@ -1,5 +1,6 @@
 // hello.cc
 #include <node.h>
+#include "../../v8/v8-master/include/v8-inspector.h"
 // #include <v8.h>
 // #include <libplatform/libplatform.h>
 
@@ -30,6 +31,10 @@ using v8::Value;
 using v8::FunctionCallbackInfo;
 using std::string;
 using std::to_string;
+
+// setBreakpoint(){
+  
+// }
 
 // Extracts a C string from a V8 Utf8Value.
 const char* ToCString(const v8::String::Utf8Value& value) {
@@ -93,6 +98,9 @@ string executeScript(Isolate* isolate, Local<String> script) {
   if (!Script::Compile(context, script).ToLocal(&compiled_script)) {
     return ReportException(isolate, &try_catch);
   }
+
+  compiled_script.setBreakpoint();
+
   // Run the script!
   v8::Local<v8::Value> result;
   if (!compiled_script->Run(context).ToLocal(&result)) {

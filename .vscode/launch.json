@@ -10,6 +10,13 @@
             "name": "Launch Program",
             "program": "node",
             "args": ["C:\\Users\\gbshugam\\projects\\workflow_engine\\src\\supervisor\\index.js"]
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
         }
     ]
 }

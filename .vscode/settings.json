@@ -62,5 +62,6 @@
         "unordered_set": "cpp",
         "deque": "cpp",
         "queue": "cpp"
-    }
+    },
+    "git.ignoreLimitWarning": true
 }
