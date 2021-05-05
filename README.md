@@ -52,3 +52,6 @@ The student finally managed to compile embed v8 as a node.js C++ addon! A web re
 ## Issues with V8 Debugging - 02/05/21
 The student has studied the v8 source code in an attempt to understand how debugging functionaly has been implemented. Given the sheer volume of code, and minimal documentation, the student has hit a brick wall with regards to implementing debugger functionality. Given that the student has two months remaining on the project, it would make sense to discontinue studying the V8 source code and devise a plan to implement debugging in a different way, potentially using a different scripting language. The student will study how CodeSandbox achieves debugging functionality for all of its scripting languages, and re-consider the debugging functionality available for python.
 
+## Python Debugging - 05/05/21
+
+Python uses a library called pdb which itself has been written in python. It appears to be a lot simpler to implement as a custom debugger.

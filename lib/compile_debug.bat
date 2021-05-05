@@ -1,1 +1,0 @@
-gcc -o debug duktape.c duk_trans_dvalue.c debug_test.c -lm

@@ -1,12 +1,17 @@
-import pdb
-
-x = 1
-y = 2
-
-pdb.run('print("hello, world.")')
-
-# print('hello')
-# breakpoint()
-# print('world')
-
 #https://codemirror.net/#
+
+import debugger
+
+d = debugger.Debugger()
+
+filename = 'example.py'
+
+err = d.set_breakpoint(filename, 2)
+if err:
+    print(err)
+else:
+    print("Breakpoint set")
+
+d.runScript(filename)
+
+print("end")
