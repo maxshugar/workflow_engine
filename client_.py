@@ -1,13 +1,18 @@
 import asyncio
 import socketio
+import debugger
 
 sio = socketio.AsyncClient()
+
+d = debugger()
 
 @sio.event
 async def connect():
     print("I'm connected!")
-    await sio.emit('sum', {"numbers": [5, 5]})
-    await sio.emit('runScript', {"script": "print('hello')\n"})
+
+@sio.event
+async def initialise(data):
+    print(data)
 
 @sio.event
 def disconnect():
@@ -18,7 +23,7 @@ def sum_result(data):
     print("sum result recieved: ", data['result'])
 
 async def main():
-    await sio.connect('http://localhost:8080')
+    await sio.connect('http://localhost:9000')
     await sio.wait()
 
 if __name__ == '__main__':

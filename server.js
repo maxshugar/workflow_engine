@@ -1,56 +1,60 @@
-const io = require("socket.io")(8080, {
+const localSocket = require("socket.io")(9000, {
   cors: {
     origin: "*",
   },  
 });
-const spawn = require('child_process').spawn;
-const { 
-    v1: uuidv1,
-    v4: uuidv4,
-  } = require('uuid');
 
-// Make temporary dir
-const scriptDirName = 'tmp';
-var fs = require('fs');
-if (!fs.existsSync(scriptDirName))
-    fs.mkdirSync(scriptDirName);
-
-
-io.on("connection", (socket) => {
-    socket.on("runScript", (data) => { 
-        console.log("Run script event recieved: ", data);
-        const fileName = `${uuidv4()}.py`;
-        if(data.hasOwnProperty('code')){
-            fs.writeFileSync(`${scriptDirName}/${fileName}`, data.code);
-            const python = spawn("python", ["-u", `${scriptDirName}/${fileName}`]);
-            python.stdout.on("data", function (data) {
-                console.log("Py script output: ", data.toString());
-                socket.emit('runResult', {
-                    ok: true,
-                    res: data.toString()
-                })
-            });              
-            python.stderr.on('data', (data) => { 
-                console.log(`error:\n${data}`);
-                socket.emit('runResult', { 
-                    ok: false,
-                    err: data.toString()
-                })
-            });
-            python.on('exit', function (code) {
-                socket.emit('runResult', { 
-                    ok: true,
-                    exitCode:  code.toString()
-                })
-                console.log('child process exited with code ' + code.toString());
-              });
-        } else {
-            socket.emit('runResult', {
-                ok: false,
-                err: 'No code passed as parameter to run.'
-            })
-        }
- 
-    });
- 
+const externalSocket = require("socket.io")(8000, {
+    cors: {
+        origin: "*",
+    },  
 });
+
+const spawn = require('child_process').spawn;
+
+const python = spawn("python", ["-u", `debugger.py`]);
+
+const commands = {
+    STEP: 'STEP',
+    CONTINUE: 'CONTINUE',
+    ABORT: 'ABORT'
+}
+
+localSocket.on("connection", (localSocket) => {
+    localSocket.on("data", (data) => {
+        // console.log({"Python data": data})
+        // let script = "import time\nx = 1\ny = 2\nz = x + y\nprint(z)\ntime.sleep(1)\nprint(z)\n"
+        // // Debug a script.
+        // localSocket.emit("debug", {script, breakpoints: [1]});
+    });
+    localSocket.on("PAUSED", (data) => {
+        console.log(data);
+
+        // Continue to next breakpoint.
+        // socket.emit("state", states.STATE_DEBUGGING);
+        // Step through code
+        localSocket.emit("command", commands.STEP);
+    })
+
+    externalSocket.on("connection", (externalSocket) => {
+        externalSocket.on("run", (data) => {
+            console.log('run command recieved');
+            //console.log(data)
+            let {script} = data;
+            // console.log(script)
+            localSocket.emit("run", {script});
+        });
+    });
+
+    python.stdout.on("data", function (data) {
+        externalSocket.emit("runResult", {ok: true, res: data.toString()});
+    });               
+    python.stderr.on('data', (data) => { 
+        console.log(`error:\n${data}`);
+    });
+    python.on('exit', function (code) {
+        console.log('child process exited with code ' + code.toString());
+    }); 
+
+})
+
