@@ -21,7 +21,7 @@ class states(enum.Enum):
         STATE_STEPPING_OUT = 7
         STATE_STEPPING_OVER = 8
         STATE_COMPLETE = 9
-        STATE_STARTING = 10
+        STATE_STARTED = 10
         STATE_FAILING = 11
 
 class commands(enum.Enum):
@@ -44,15 +44,17 @@ class Unbuffered(object):
 class debugger():
 
     def __init__(self, sio):
-        self.state = states.STATE_STARTING.name
+        self.state = states.STATE_STARTED.name
         self.breakpoints = []
         self.watchList = []
         self.sio = sio
 
     def run(self, scriptStr):
         self.state = states.STATE_RUNNING.name
+        self.sio.emit("state", {"state": d.state})
         try:
             if isinstance(scriptStr, str):
+                sys.settrace(None)
                 cmd = compile(scriptStr, "<string>", "exec")
                 exec(cmd)
                 self.state = states.STATE_COMPLETE.name
@@ -65,14 +67,17 @@ class debugger():
         self.breakpoints = breakpoints
         self.watchList = watchList
         self.state = states.STATE_DEBUGGING.name
+        self.sio.emit("state", {"state": d.state})
         try:
             if isinstance(scriptStr, str):
                 cmd = compile(scriptStr, "<string>", "exec")
             sys.settrace(self.tracer)
             exec(cmd)
+            self.state = states.STATE_COMPLETE.name
         except Exception as e:
             tb = traceback.format_exc()
             print(tb)
+            self.state = states.STATE_TERMINATED.name
 
     def tracer(self, frame, event, arg):
         if event == 'call':
@@ -99,8 +104,16 @@ class debugger():
         
         line_no = frame.f_lineno
 
-        
+ 
+        # Check if breakpoint has been hit on line.
+        if(line_no in self.breakpoints):
+            self.state = states.STATE_PAUSED.name
+            self.sio.emit("state", {"state": d.state, "breakpoint": True, "lineNumber": line_no})
 
+            while(self.state == states.STATE_PAUSED.name):
+                    time.sleep(0.1)
+        
+ 
         if(self.state == states.STATE_STEPPING.name):
             self.state = states.STATE_PAUSED.name
     
@@ -114,13 +127,7 @@ class debugger():
                 time.sleep(0.1)
             return
 
-        # Check if breakpoint has been hit on line.
-        if(line_no in self.breakpoints):
-            self.state = states.STATE_PAUSED.name
-            self.sio.emit("PAUSED", {"breakpoint": True, "lineNumber": line_no})
-
-            while(self.state == states.STATE_PAUSED.name):
-                    time.sleep(0.1)
+        
 
         # if(self.state == states.STATE_STEPPING.name or line_no in self.breakpoints):
         #     if(self.state == states.STATE_STEPPING.name):
@@ -178,22 +185,28 @@ class debugger():
 
 d = debugger(sio)
 
-@sio.event
-def connect():
-    # Return the debuggers state on initial connection.
-    sio.emit("data", {"state": ":)"})
+# @sio.event
+# def connect():
+#     # Return the debuggers state on initial connection.
+#     time.sleep(1)
+#     print(sio.sid)
+#     sio.emit("state", {"state": d.state})
 
 @sio.event
 def run(data):
     d.run(data["script"])
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
+    d.state = states.STATE_IDLE
 
-@sio.event
+@sio.event 
 def debug(data):
     d.debug(data["script"], data["breakpoints"])
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
+    d.state = states.STATE_IDLE
 
 @sio.event
-def state(state):
-    d.state = state
+def getState(): 
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
 
 # Manipulate state of debugger using commands (transitions).
 @sio.event

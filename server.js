@@ -12,7 +12,7 @@ const externalSocket = require("socket.io")(8000, {
 
 const spawn = require('child_process').spawn;
 
-const python = spawn("python", ["-u", `debugger.py`]);
+let python = spawn("python", ["-u", `debugger.py`]);
 
 const commands = {
     STEP: 'STEP',
@@ -21,40 +21,40 @@ const commands = {
 }
 
 localSocket.on("connection", (localSocket) => {
-    localSocket.on("data", (data) => {
-        // console.log({"Python data": data})
-        // let script = "import time\nx = 1\ny = 2\nz = x + y\nprint(z)\ntime.sleep(1)\nprint(z)\n"
-        // // Debug a script.
-        // localSocket.emit("debug", {script, breakpoints: [1]});
-    });
-    localSocket.on("PAUSED", (data) => {
-        console.log(data);
-
-        // Continue to next breakpoint.
-        // socket.emit("state", states.STATE_DEBUGGING);
-        // Step through code
-        localSocket.emit("command", commands.STEP);
+    console.log('localsocket connected')
+    localSocket.emit("getState");
+    localSocket.on("state", (state) => {
+        externalSocket.emit("state", state);
     })
-
     externalSocket.on("connection", (externalSocket) => {
-        externalSocket.on("run", (data) => {
-            console.log('run command recieved');
-            //console.log(data)
-            let {script} = data;
-            // console.log(script)
-            localSocket.emit("run", {script});
-        });
-    });
-
+        externalSocket.on("run", (data) => {  
+            localSocket.emit("run", data);
+            localSocket.emit("getState");
+        });   
+        externalSocket.on("debug", (data) => { 
+            localSocket.emit("debug", data); 
+            localSocket.emit("getState");
+        }); 
+        externalSocket.on("abort", () => {
+            console.log('abort command recieved');
+            python.kill(); 
+            python = spawn("python", ["-u", `debugger.py`]); 
+            
+        });  
+        externalSocket.on("getState", () => {    
+            localSocket.emit("getState"); 
+        });   
+    });  
+  
     python.stdout.on("data", function (data) {
-        externalSocket.emit("runResult", {ok: true, res: data.toString()});
+        externalSocket.emit("data", {ok: true, res: data.toString()});
     });               
     python.stderr.on('data', (data) => { 
         console.log(`error:\n${data}`);
-    });
-    python.on('exit', function (code) {
-        console.log('child process exited with code ' + code.toString());
     }); 
-
+    python.on('exit', function (code) {
+        externalSocket.emit("state", {state: 'STATE_ABORTED', code});
+    }); 
+   
 })
 
