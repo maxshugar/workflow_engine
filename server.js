@@ -11,20 +11,21 @@ const externalSocket = require("socket.io")(8000, {
 });
 
 const spawn = require("child_process").spawn;
-
+ 
 const handlePythonIO = (python, externalSocket) => {
     python.stdout.on("data", function (data) {
         // console.log(data.toString());
-        externalSocket.emit("data", {ok: true, res: data.toString()});
+        externalSocket.emit("data", data.toString());
     });                
-    python.stderr.on('data', (data) => { 
-        console.log(`error:\n${data}`);
+    python.stderr.on('data', (err) => { 
+        //console.log(`error:\n${err}`);
+        externalSocket.emit("error", err.toString());
     });
     python.on('exit', function (code) {
         externalSocket.emit("state", {state: 'STATE_ABORTED', code});
-    }); 
-}
-
+    });   
+} 
+  
 const commands = {
   STEP: "STEP",
   CONTINUE: "CONTINUE",
@@ -37,18 +38,18 @@ let _externalSocket = null;
 localSocket.on("connection", (localSocket) => {
   console.log("local socket connected");
   _localSocket = localSocket;
-  localSocket.emit("getState");
+  // localSocket.emit("getState");
   // Return debugger state to react.
   localSocket.on("state", (state) => {
       if(_externalSocket != null)
         _externalSocket.emit("state", state);
-  });
+  }); 
   localSocket.on("data", (data) => {
     console.log({"Data from Python": data});
   }); 
   localSocket.on("addBreakpoint", (lineNumber) => {
     _externalSocket.emit("addBreakpoint", lineNumber);
-  });
+  }); 
   localSocket.on("removeBreakpoint", (lineNumber) => {
     _externalSocket.emit("removeBreakpoint", lineNumber);
   }); 
@@ -60,7 +61,6 @@ externalSocket.on("connection", (externalSocket) => {
   let python = spawn("python", ["-u", `debugger.py`]);
   handlePythonIO(python, externalSocket); 
   externalSocket.on("run", (data) => {
-    console.log("run command recieved from react.");
     _localSocket.emit("run", data); 
   }); 
   externalSocket.on("debug", (data) => {

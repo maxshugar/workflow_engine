@@ -60,13 +60,10 @@ class debugger():
                 self.state = states.STATE_COMPLETE.name
         except Exception as e:
             tb = traceback.format_exc()
-            print(tb)
+            print(tb, file=sys.stderr)
             self.state = states.STATE_TERMINATED.name
         
-    def debug(self, scriptStr, breakpoints = [], watchList = []):
-        #self.breakpoints = breakpoints
-        self.watchList = watchList
-        #self.sio.emit("state", {"state": d.state})
+    def debug(self, scriptStr):
         try:
             if isinstance(scriptStr, str):
                 cmd = compile(scriptStr, "<string>", "exec")
@@ -75,7 +72,7 @@ class debugger():
             self.state = states.STATE_COMPLETE.name
         except Exception as e:
             tb = traceback.format_exc()
-            print(tb)
+            print(tb, file=sys.stderr)
             self.state = states.STATE_TERMINATED.name
 
     def addBreakpoint(self, lineNumber):
@@ -221,6 +218,8 @@ def run(data):
     time.sleep(0.1)
     sio.emit("state", {"state": d.state, "sid": sio.sid})
     d.state = states.STATE_IDLE.name
+    time.sleep(0.1)
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
 
 @sio.event 
 def debug(data):
@@ -230,10 +229,12 @@ def debug(data):
     d.state = states.STATE_DEBUGGING.name
     sio.emit("state", {"state": d.state}) 
     time.sleep(0.1) 
-    d.debug(data["script"], data["breakpoints"])
+    d.debug(data["script"])
     time.sleep(0.1)
     sio.emit("state", {"state": d.state, "sid": sio.sid})
     d.state = states.STATE_IDLE.name
+    time.sleep(0.1)
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
 
 @sio.event
 def getState(): 
