@@ -12,6 +12,8 @@ const externalSocket = require("socket.io")(8000, {
 
 const spawn = require("child_process").spawn;
  
+const Sequencer = require('./sequencer');
+
 const handlePythonIO = (python, externalSocket) => {
     python.stdout.on("data", function (data) {
         // console.log(data.toString());
@@ -43,7 +45,7 @@ localSocket.on("connection", (localSocket) => {
   localSocket.on("state", (state) => {
       if(_externalSocket != null)
         _externalSocket.emit("state", state);
-  }); 
+  });     
   localSocket.on("data", (data) => {
     console.log({"Data from Python": data});
   }); 
@@ -58,11 +60,11 @@ localSocket.on("connection", (localSocket) => {
 externalSocket.on("connection", (externalSocket) => {
   console.log("external socket connected");
   _externalSocket = externalSocket;
-  let python = spawn("python", ["-u", `debugger.py`]);
+  let python = spawn("python", ["-u", `debugger/debugger.py`]);
   handlePythonIO(python, externalSocket); 
   externalSocket.on("run", (data) => {
     _localSocket.emit("run", data); 
-  }); 
+  });  
   externalSocket.on("debug", (data) => {
     // console.log('debug command recieved.')
     _localSocket.emit("debug", data);  
@@ -75,7 +77,7 @@ externalSocket.on("connection", (externalSocket) => {
   });      
   externalSocket.on("abort", () => {
     python.kill(); 
-    python = spawn("python", ["-u", `debugger.py`]);
+    python = spawn("python", ["-u", `debugger/debugger.py`]);
     handlePythonIO(python, externalSocket);
   }); 
   // Get the state of the python debugger.
@@ -88,6 +90,13 @@ externalSocket.on("connection", (externalSocket) => {
   });
   externalSocket.on("removeBreakpoint", (lineNumber) => {
     _localSocket.emit("removeBreakpoint", lineNumber);
+  });
+  externalSocket.on("addBreakpoints", (breakpoints) => {
+    _localSocket.emit("addBreakpoints", breakpoints);
+  });
+  externalSocket.on("runSequence", ({language, sequence}) => {
+    const seq = Sequencer(language, sequence);
+    seq.load();
   });
 });
 

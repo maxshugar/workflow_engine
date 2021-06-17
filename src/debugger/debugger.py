@@ -63,8 +63,9 @@ class debugger():
             print(tb, file=sys.stderr)
             self.state = states.STATE_TERMINATED.name
         
-    def debug(self, scriptStr):
+    def debug(self, scriptStr, breakpoints):
         try:
+            self.breakpoints = breakpoints
             if isinstance(scriptStr, str):
                 cmd = compile(scriptStr, "<string>", "exec")
             sys.settrace(self.tracer)
@@ -229,7 +230,7 @@ def debug(data):
     d.state = states.STATE_DEBUGGING.name
     sio.emit("state", {"state": d.state}) 
     time.sleep(0.1) 
-    d.debug(data["script"])
+    d.debug(data["script"], data["breakpoints"])
     time.sleep(0.1)
     sio.emit("state", {"state": d.state, "sid": sio.sid})
     d.state = states.STATE_IDLE.name
@@ -262,9 +263,15 @@ def addBreakpoint(lineNumber):
 
 @sio.event
 def removeBreakpoint(lineNumber):
+    print("removeBreakpoint command recieved from node")
     if(d.removeBreakpoint(lineNumber)):
         sio.emit("state", {"state": states.STATE_BREAKPOINT_REMOVED.name, "sid": sio.sid, "lineNumber": lineNumber})
         sio.emit("state", {"state": d.state, "sid": sio.sid})
+    return
+
+@sio.event
+def addBreakpoints(breakpoints):
+    d.breakpoints = breakpoints
     return
 
 @sio.event
