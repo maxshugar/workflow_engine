@@ -1,30 +1,29 @@
 const Task = require("./task");
 
-module.exports = ({ language, sequence }) => {
+module.exports = (sequence, socket) => {
   // Convert tasks to objects.
   const taskObjects = {};
-  Object.keys(sequence.nodes).map((taskName) => {
-    const task = sequence.nodes[taskName];
-    taskObjects[taskName] = Task(taskName, task.code, language);
+  Object.keys(sequence.nodes).map((id) => {
+    const task = sequence.nodes[id];
+    taskObjects[id] = Task(id, task.code, 'py', socket);
   });
 
   // Build dependency graph.
-  Object.keys(taskObjects).map((taskName) => {
-    const task = taskObjects[taskName];
-    sequence.nodes[taskName].predecessors.map(dependencyName => {
-        if (dependencyName != 'startNode'){
-            task.addDependency(taskObjects[dependencyName]);
+  Object.keys(taskObjects).map((id) => {
+    const task = taskObjects[id];
+    sequence.nodes[id].predecessors.map(dependencyId => {
+        if (dependencyId != 'startNode'){
+            task.addDependency(taskObjects[dependencyId]);
         }
     })
   });
 
   return {
-    language: language,
     sequence: sequence,
     dependencyGraph: taskObjects,
     run(){
-      sequence.startNodes.map((taskName) => {
-        const task = this.dependencyGraph[taskName];
+      sequence.startNodes.map((id) => {
+        const task = this.dependencyGraph[id];
         task.run();
       });
     },

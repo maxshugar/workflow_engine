@@ -8,6 +8,7 @@ code = sys.argv[1]
 
 try:
     if isinstance(code, str):
+        sys.settrace(None)
         cmd = compile(code, "<string>", "exec")
         exec(cmd)
 except Exception as e:

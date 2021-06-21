@@ -55,8 +55,25 @@ const examplePyPayload2 = {
             }
         }
     }
+} 
+
+const examplePyPayload3 = {
+    language: 'py',
+    sequence: {
+        startNodes: ["task1"],
+        nodes: {
+            task1: {
+                code: makeDummyPyScript("task1", 2),
+                predecessors: [],
+            },
+            task2: {
+                code: 'raise Exception("!!!")',
+                predecessors: ["task1"],
+            }
+        }
+    }
 }
 
-const seq = Sequencer(examplePyPayload2);
+const seq = Sequencer(examplePyPayload3);
 
 seq.run();

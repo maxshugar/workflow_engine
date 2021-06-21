@@ -1,62 +1,68 @@
-const STATE_IDLE = 0;
-const STATE_RUNNING = 1;
-const STATE_COMPLETE = 2;
+const STATE_SEQ_TASK_IDLE = 0;
+const STATE_SEQ_TASK_RUNNING = 1;
+const STATE_SEQ_TASK_SCOMPLETE = 2;
+const STATE_SEQ_TASK_ERROR = 3;
 
-const {spawn} = require('child_process');
-const path = require('path');
+const { spawn } = require("child_process");
+const path = require("path");
 
-module.exports = (name, code, language) => {
+module.exports = (id, code, language = 'py', externalSocket) => {
+  return {
+    id,
+    state: STATE_SEQ_TASK_IDLE,
+    language,
+    code: code,
+    predecessors: [],
+    successors: [],
+    socket: externalSocket,
 
-    return ({  
-        name: name,
-        state: STATE_IDLE,
-        language: language,
-        code: code,
-        predecessors: [],
-        successors: [],
+    run() {
+      const _this = this;
 
-        run(){
-
-            const _this = this;
-
-            const predecessorNames = [];
-
-            // Ensure all dependencies have completed before beginning.
-            for(let i = 0; i < this.predecessors.length; i++){
-                const predecessor = this.predecessors[i];
-                predecessorNames.push(predecessor.name);
-                if(predecessor.state != STATE_COMPLETE){
-                    // console.log(`${_this.name} recieved run signal, waiting for ${predecessor.name} to complete`);
-                    return;
-                }
-            }
-            
-            console.log(JSON.stringify(predecessorNames)  + '-> ' + this.name);
-
-            this.state = STATE_RUNNING;
-
-            // Create child process
-            const scriptFilename = path.join(__dirname, '../debugger', 'runner.py');
-            let python = spawn("python", ["-u", scriptFilename, this.code]);
-            python.stdout.on("data", function (data) {
-                //console.log(data.toString());
-            });                
-            python.stderr.on('data', (err) => { 
-                console.log(`error:\n${err}`);
-            });
-            python.on('exit', function (code) {
-                if(code === 0){
-                    _this.state = STATE_COMPLETE;
-                    _this.notifySuccessors();
-                }
-            });   
-        },
-        addDependency(dependency) {
-            dependency.successors.push(this);
-            this.predecessors.push(dependency);
-        },
-        notifySuccessors(){
-            this.successors.map(successor => successor.run() )
+      const predecessorIds = [];
+ 
+      // Ensure all dependencies have completed before beginning.
+      for (let i = 0; i < this.predecessors.length; i++) {
+        const predecessor = this.predecessors[i];
+        //console.log(predecessor)
+        predecessorIds.push(predecessor.id);
+        if (predecessor.state != STATE_SEQ_TASK_SCOMPLETE) {
+          // console.log(`${_this.id} recieved run signal, waiting for ${predecessor.id} to complete`);
+          return;
         }
-    });
-}
+      }
+
+      console.log(JSON.stringify(predecessorIds) + "-> " + this.id);
+
+      this.state = STATE_SEQ_TASK_RUNNING;
+      this.socket.emit("sequencer", {state: this.state, taskId: this.id});
+      // Create child process
+      try {
+        const scriptFilename = path.join(__dirname, "../python", "runner.py");
+        let python = spawn("python", ["-u", scriptFilename, this.code]);
+        python.stdout.on("data", function (data) {
+          console.log(data.toString());
+        });
+        python.stderr.on("data", (err) => {
+          console.log(`error:\n${err}`);
+          _this.state = STATE_SEQ_TASK_ERROR;
+        });
+        python.on("exit", function (code) {
+          if (_this.state !== STATE_SEQ_TASK_ERROR) {
+            _this.state = STATE_SEQ_TASK_SCOMPLETE;
+            _this.notifySuccessors();
+          }
+        });
+      } catch (err) {
+        console.log({ err });
+      }
+    },
+    addDependency(dependency) {
+      dependency.successors.push(this);
+      this.predecessors.push(dependency);
+    },
+    notifySuccessors() {
+      this.successors.map((successor) => successor.run());
+    },
+  };
+};

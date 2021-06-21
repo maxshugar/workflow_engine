@@ -11,7 +11,8 @@ const externalSocket = require("socket.io")(8000, {
 });
 
 const spawn = require("child_process").spawn;
- 
+const path = require("path"); 
+
 const Sequencer = require('./sequencer');
 
 const handlePythonIO = (python, externalSocket) => {
@@ -37,6 +38,8 @@ const commands = {
 let _localSocket = null; 
 let _externalSocket = null;
 
+const dbgFilePath = path.join(__dirname, "python", "debugger.py");
+
 localSocket.on("connection", (localSocket) => {
   console.log("local socket connected");
   _localSocket = localSocket;
@@ -60,7 +63,7 @@ localSocket.on("connection", (localSocket) => {
 externalSocket.on("connection", (externalSocket) => {
   console.log("external socket connected");
   _externalSocket = externalSocket;
-  let python = spawn("python", ["-u", `debugger/debugger.py`]);
+  let python = spawn("python", ["-u", dbgFilePath]);
   handlePythonIO(python, externalSocket); 
   externalSocket.on("run", (data) => {
     _localSocket.emit("run", data); 
@@ -74,17 +77,17 @@ externalSocket.on("connection", (externalSocket) => {
   });      
   externalSocket.on("step", () => {
     _localSocket.emit("stepDebug");
-  });      
+  });       
   externalSocket.on("abort", () => {
     python.kill(); 
-    python = spawn("python", ["-u", `debugger/debugger.py`]);
+    python = spawn("python", ["-u", dbgFilePath]);
     handlePythonIO(python, externalSocket);
   }); 
   // Get the state of the python debugger.
   externalSocket.on("getState", () => {
       if(_localSocket != null) 
         _localSocket.emit("getState");
-  });  
+  });   
   externalSocket.on("addBreakpoint", (lineNumber) => {
     _localSocket.emit("addBreakpoint", lineNumber);
   });
@@ -94,9 +97,9 @@ externalSocket.on("connection", (externalSocket) => {
   externalSocket.on("addBreakpoints", (breakpoints) => {
     _localSocket.emit("addBreakpoints", breakpoints);
   });
-  externalSocket.on("runSequence", ({language, sequence}) => {
-    const seq = Sequencer(language, sequence);
-    seq.load();
+  externalSocket.on("runSequence", (sequence) => {
+    const seq = Sequencer(sequence, externalSocket);
+    seq.run();
   });
 });
 
