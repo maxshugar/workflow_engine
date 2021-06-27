@@ -95,117 +95,37 @@ class debugger():
             if event == 'call':
                 co = frame.f_code
                 func_name = co.co_name
-                #print("Function '" + func_name + "' called!")
+                # print("Function '" + func_name + "' called!")
             elif event == 'line':                
                 self.handleLine(frame, event, arg)
             elif event == 'return':
                 co = frame.f_code
                 func_name = co.co_name
-                #print("Returning from '" + func_name + "'!")
+                # print("Returning from '" + func_name + "'!")
             elif event == 'exception':
-                co = frame.f_code
+                co = frame.f_code 
                 func_name = co.co_name
                 line_no = frame.f_lineno
                 exc_type, exc_value, exc_traceback = arg
-                #print ('Tracing exception: %s "%s" on line %s of %s' % \
-                #(exc_type.__name__, exc_value, line_no, func_name))
+                # print ('Tracing exception: %s "%s" on line %s of %s' % \
+                # (exc_type.__name__, exc_value, line_no, func_name))
             return self.tracer
         return
 
     def handleLine(self, frame, event, arg):
-        
         line_no = frame.f_lineno
-        # # Check if debugger should step through line.
-        # if(d.state == states.STATE_STEPPING.name):
-        
-
         # Check if breakpoint has been hit on line.
         if(line_no in self.breakpoints):
             self.state = states.STATE_PAUSED.name
             self.sio.emit("state", {"state": d.state, "breakpoint": True, "lineNumber": line_no})
-
             while(self.state == states.STATE_PAUSED.name):
                     time.sleep(0.1)
-        
- 
-        # if(self.state == states.STATE_STEPPING.name):
-        #     self.state = states.STATE_PAUSED.name
-    
-        # print('line_no: ' + str(line_no) + '\n')
-
-        # # Pause execution if debugger has been paused.
-        # if(self.state == states.STATE_PAUSED.name):
-        #     print("paused after breakpoint state")
-        #     self.sio.emit("PAUSED", {"breakpoint": False, "stepping": True, "lineNumber": line_no})
-        #     while(self.state == states.STATE_PAUSED.name):
-        #         time.sleep(0.1)
-        #     return
-
-        
-
-        # if(self.state == states.STATE_STEPPING.name or line_no in self.breakpoints):
-        #     if(self.state == states.STATE_STEPPING.name):
-        #         print("Line '" + str(line_no) + "' reached!")
-        #     elif(line_no in self.breakpoints):
-        #         self.state = states.STATE_BREAKPOINT_HIT.name
-                
-        #         while(self.state == states.STATE_BREAKPOINT_HIT):
-        #             time.sleep(0.1)
-        #         #print("breakpoint on line " + str(line_no) + " hit!")
-        #     # Print watch list.    
-        #     for varName in self.watchList:
-        #         if varName in frame.f_locals:
-        #             print(varName + ": " + str(frame.f_locals[varName]))
-        #     #while(self.state == )
-            # cmd = input("Enter command...\n")
-            # if(cmd == 'step'): self.state = states.STATE_STEPPING.name
-            # if(cmd == 'continue'): self.state = states.STATE_DEBUGGING.name
-
-    def start(self):
-        # Send start state.
-
-        while(self.state != states.STATE_TERMINATED.name):
-            try:
-
-      
-                data = json.loads(lines)
-                
-                # Set debugger state to idle.
-                # if(data["state"] == states.STATE_IDLE.name):
-                #     self.state = states.STATE_IDLE.name
-                #     self.sendJsonToParent({"state": self.state, "msg": "Hello master, I'm ready and waiting :)"})
-                # else:
-                #     self.sendJsonToParent({"state": self.state, "msg": "Hello master, I haven't recieved a state from you :("})
-                
-                #{"state": "STATE_IDLE", "msg": "Hello slave :)"}
-
-                #self.sendJsonToParent({"msg": "hello to you too :)"})
-                #self.sendJsonToParent({"state": self.state, "msg": "msg recieved"})
-
-                #j = json.loads(cmd)
-                #print(j, flush=True)
-                #j = json.dumps({"state": d.state, "msg": "I'm for instructions :)"})
-                #print(j, flush=True)
-            except Exception as e:
-                self.state = states.STATE_FAILING.name
-                self.sendJsonToParent({"state": self.state, "msg": str(e)})
-
-
-# d.start()
-
-# scriptStr = "x = 1\ny = 2\nz = x + y\nprint(z)\n"
-
-# d.debug(scriptStr, [1, 4], ["z"])
 
 d = debugger(sio)
 
 @sio.event
 def connect():
     sio.emit("state", {"state": d.state})  
-
-# @sio.event
-# def connect_error(data):
-#     print("The connection failed!")
 
 @sio.event
 def run(data):
@@ -263,7 +183,7 @@ def addBreakpoint(lineNumber):
 
 @sio.event
 def removeBreakpoint(lineNumber):
-    print("removeBreakpoint command recieved from node")
+    # print("removeBreakpoint command recieved from node")
     if(d.removeBreakpoint(lineNumber)):
         sio.emit("state", {"state": states.STATE_BREAKPOINT_REMOVED.name, "sid": sio.sid, "lineNumber": lineNumber})
         sio.emit("state", {"state": d.state, "sid": sio.sid})

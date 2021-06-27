@@ -1,7 +1,9 @@
-const STATE_SEQ_TASK_IDLE = 0;
-const STATE_SEQ_TASK_RUNNING = 1;
-const STATE_SEQ_TASK_SCOMPLETE = 2;
-const STATE_SEQ_TASK_ERROR = 3;
+const states = {
+  STATE_SEQ_TASK_IDLE: 'STATE_SEQ_TASK_IDLE',
+  STATE_SEQ_TASK_RUNNING: 'STATE_SEQ_TASK_RUNNING',
+  STATE_SEQ_TASK_COMPLETE: 'STATE_SEQ_TASK_COMPLETE',
+  STATE_SEQ_TASK_ERROR: 'STATE_SEQ_TASK_ERROR',
+} 
 
 const { spawn } = require("child_process");
 const path = require("path");
@@ -9,7 +11,7 @@ const path = require("path");
 module.exports = (id, code, language = 'py', externalSocket) => {
   return {
     id,
-    state: STATE_SEQ_TASK_IDLE,
+    state: states.STATE_SEQ_TASK_IDLE,
     language,
     code: code,
     predecessors: [],
@@ -25,31 +27,33 @@ module.exports = (id, code, language = 'py', externalSocket) => {
       for (let i = 0; i < this.predecessors.length; i++) {
         const predecessor = this.predecessors[i];
         //console.log(predecessor)
-        predecessorIds.push(predecessor.id);
-        if (predecessor.state != STATE_SEQ_TASK_SCOMPLETE) {
+        predecessorIds.push(predecessor.id); 
+        if (predecessor.state != states.STATE_SEQ_TASK_COMPLETE) {
           // console.log(`${_this.id} recieved run signal, waiting for ${predecessor.id} to complete`);
           return;
-        }
+        } 
       }
 
-      console.log(JSON.stringify(predecessorIds) + "-> " + this.id);
+      //console.log(JSON.stringify(predecessorIds) + "-> " + this.id);
 
-      this.state = STATE_SEQ_TASK_RUNNING;
-      this.socket.emit("sequencer", {state: this.state, taskId: this.id});
+      this.state = states.STATE_SEQ_TASK_RUNNING;
+      this.socket.emit("sequencerState", {state: this.state, taskId: this.id});
       // Create child process
       try {
         const scriptFilename = path.join(__dirname, "../python", "runner.py");
         let python = spawn("python", ["-u", scriptFilename, this.code]);
         python.stdout.on("data", function (data) {
-          console.log(data.toString());
+          _this.socket.emit("data", `[${_this.id}] ${data.toString()}`);
         });
         python.stderr.on("data", (err) => {
-          console.log(`error:\n${err}`);
-          _this.state = STATE_SEQ_TASK_ERROR;
+          _this.state = states.STATE_SEQ_TASK_ERROR;
+          _this.socket.emit("sequencerState", {state: _this.state, taskId: _this.id});
+          _this.socket.emit("error", err.toString());
         });
         python.on("exit", function (code) {
-          if (_this.state !== STATE_SEQ_TASK_ERROR) {
-            _this.state = STATE_SEQ_TASK_SCOMPLETE;
+          if (_this.state !== states.STATE_SEQ_TASK_ERROR) {
+            _this.state = states.STATE_SEQ_TASK_COMPLETE;
+            _this.socket.emit("sequencerState", {state: _this.state, taskId: _this.id});
             _this.notifySuccessors();
           }
         });

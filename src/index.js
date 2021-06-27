@@ -90,7 +90,7 @@ externalSocket.on("connection", (externalSocket) => {
   });   
   externalSocket.on("addBreakpoint", (lineNumber) => {
     _localSocket.emit("addBreakpoint", lineNumber);
-  });
+  }); 
   externalSocket.on("removeBreakpoint", (lineNumber) => {
     _localSocket.emit("removeBreakpoint", lineNumber);
   });
