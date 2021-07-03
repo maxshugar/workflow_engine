@@ -1,4 +1,4 @@
-const localSocket = require("socket.io")(9000, {
+const pySocket = require("socket.io")(9000, {
   cors: {
     origin: "*",
   },
@@ -10,92 +10,122 @@ const externalSocket = require("socket.io")(8000, {
   },
 });
 
-const spawn = require("child_process").spawn;
+const v8Socket = require("socket.io")(8001, {
+  cors: {
+    origin: "*",
+  },
+});
+
+const {spawn, execFile} = require("child_process");
 const path = require("path"); 
 
 const Sequencer = require('./sequencer');
-
-const handlePythonIO = (python, externalSocket) => {
-    python.stdout.on("data", function (data) {
-        // console.log(data.toString());
-        externalSocket.emit("data", data.toString());
-    });                
-    python.stderr.on('data', (err) => { 
-        //console.log(`error:\n${err}`);
-        externalSocket.emit("error", err.toString());
-    });
-    python.on('exit', function (code) {
-        externalSocket.emit("state", {state: 'STATE_ABORTED', code});
-    });   
-} 
   
-const commands = {
-  STEP: "STEP",
-  CONTINUE: "CONTINUE",
-  ABORT: "ABORT",
-};
- 
-let _localSocket = null; 
-let _externalSocket = null;
+const handleChildProcessIO = (child, externalSocket) => {
+  child.stdout.on("data", function (data) {
+      console.log({data: data.toString()});
+      externalSocket.emit("data", data.toString());
+  });                
+  child.stderr.on('data', (err) => { 
+      console.log(`error:\n${err}`);
+      externalSocket.emit("error", err.toString());
+  });
+  child.on('exit', function (code) {
+    console.log(`code:\n${code}`);
+      externalSocket.emit("state", {state: 'STATE_ABORTED', code});
+  });   
+} 
+
+let _pySocket = null; 
+let _externalSocket = null; 
+let _v8Socket = null;
 
 const dbgFilePath = path.join(__dirname, "python", "debugger.py");
+const v8RunnerFilePath = path.join(__dirname, "v8", "index.js");
 
-localSocket.on("connection", (localSocket) => {
-  console.log("local socket connected");
-  _localSocket = localSocket;
-  // localSocket.emit("getState");
+pySocket.on("connection", (pySocket) => {
+  console.log("python connected");
+  _pySocket = pySocket;
+  // pySocket.emit("getState");
   // Return debugger state to react.
-  localSocket.on("state", (state) => {
+  pySocket.on("state", (state) => {
       if(_externalSocket != null)
         _externalSocket.emit("state", state);
-  });     
-  localSocket.on("data", (data) => {
+  });       
+  pySocket.on("data", (data) => {
     console.log({"Data from Python": data});
   }); 
-  localSocket.on("addBreakpoint", (lineNumber) => {
+  pySocket.on("addBreakpoint", (lineNumber) => {
     _externalSocket.emit("addBreakpoint", lineNumber);
-  }); 
-  localSocket.on("removeBreakpoint", (lineNumber) => {
+  });  
+  pySocket.on("removeBreakpoint", (lineNumber) => {
     _externalSocket.emit("removeBreakpoint", lineNumber);
+  });  
+});  
+
+v8Socket.on("connection", (v8Socket) => {
+  console.log("v8 socket connected");
+  _v8Socket = v8Socket;
+  v8Socket.on("state", (state) => {
+    console.log({state})
+      if(_externalSocket != null)
+        _externalSocket.emit("state", state);
   }); 
-}); 
- 
+  v8Socket.on("err", (err) => {
+    console.log(err)
+    if(_externalSocket != null)
+      _externalSocket.emit("error", err);
+});     
+});   
+  
 externalSocket.on("connection", (externalSocket) => {
   console.log("external socket connected");
   _externalSocket = externalSocket;
   let python = spawn("python", ["-u", dbgFilePath]);
-  handlePythonIO(python, externalSocket); 
-  externalSocket.on("run", (data) => {
-    _localSocket.emit("run", data); 
+  handleChildProcessIO(python, externalSocket); 
+
+  let v8 = execFile("node", [v8RunnerFilePath]);
+  handleChildProcessIO(v8, externalSocket);
+
+  externalSocket.on("run", async ({language, script}) => {
+    //console.log({language, script})
+    if(language == 'javascript'){
+      _v8Socket.emit("run", {script});
+    } else{
+      _pySocket.emit("run", {script}); 
+    }
   });  
   externalSocket.on("debug", (data) => {
     // console.log('debug command recieved.')
-    _localSocket.emit("debug", data);  
-  }); 
+    _pySocket.emit("debug", data);  
+  });  
   externalSocket.on("continue", () => {
-    _localSocket.emit("continueDebug");
+    _pySocket.emit("continueDebug");
   });      
   externalSocket.on("step", () => {
-    _localSocket.emit("stepDebug");
+    _pySocket.emit("stepDebug");
   });       
   externalSocket.on("abort", () => {
     python.kill(); 
     python = spawn("python", ["-u", dbgFilePath]);
-    handlePythonIO(python, externalSocket);
-  }); 
+    handleChildProcessIO(python, externalSocket);
+    v8 = spawn("node", [v8RunnerFilePath]);
+    handleChildProcessIO(v8, externalSocket);
+  });  
   // Get the state of the python debugger.
   externalSocket.on("getState", () => {
-      if(_localSocket != null) 
-        _localSocket.emit("getState");
+      if(_pySocket != null) 
+        _pySocket.emit("getState");
   });   
   externalSocket.on("addBreakpoint", (lineNumber) => {
-    _localSocket.emit("addBreakpoint", lineNumber);
+    _pySocket.emit("addBreakpoint", lineNumber);
   }); 
   externalSocket.on("removeBreakpoint", (lineNumber) => {
-    _localSocket.emit("removeBreakpoint", lineNumber);
+    console.log('removeBreakpoint command recieved from react')
+    _pySocket.emit("removeBreakpoint", lineNumber);
   });
   externalSocket.on("addBreakpoints", (breakpoints) => {
-    _localSocket.emit("addBreakpoints", breakpoints);
+    _pySocket.emit("addBreakpoints", breakpoints);
   });
   externalSocket.on("runSequence", (sequence) => {
     const seq = Sequencer(sequence, externalSocket);

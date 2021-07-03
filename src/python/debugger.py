@@ -125,6 +125,7 @@ d = debugger(sio)
 
 @sio.event
 def connect():
+    d.breakpoints = []
     sio.emit("state", {"state": d.state})  
 
 @sio.event
@@ -176,17 +177,19 @@ def stepDebug():
 
 @sio.event
 def addBreakpoint(lineNumber):
-    if(d.addBreakpoint(lineNumber)):
-        sio.emit("state", {"state": states.STATE_BREAKPOINT_ADDED.name, "sid": sio.sid, "lineNumber": lineNumber})
-        sio.emit("state", {"state": d.state, "sid": sio.sid})
+    d.addBreakpoint(lineNumber)
+    sio.emit("state", {"state": states.STATE_BREAKPOINT_ADDED.name, "sid": sio.sid, "lineNumber": lineNumber})
+    time.sleep(0.1)
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
     return
 
 @sio.event
 def removeBreakpoint(lineNumber):
     # print("removeBreakpoint command recieved from node")
-    if(d.removeBreakpoint(lineNumber)):
-        sio.emit("state", {"state": states.STATE_BREAKPOINT_REMOVED.name, "sid": sio.sid, "lineNumber": lineNumber})
-        sio.emit("state", {"state": d.state, "sid": sio.sid})
+    d.removeBreakpoint(lineNumber)
+    sio.emit("state", {"state": states.STATE_BREAKPOINT_REMOVED.name, "sid": sio.sid, "lineNumber": lineNumber})
+    time.sleep(0.1)
+    sio.emit("state", {"state": d.state, "sid": sio.sid})
     return
 
 @sio.event

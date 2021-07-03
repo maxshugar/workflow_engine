@@ -1,0 +1,35 @@
+{
+  "name": "workflow_engine",
+  "version": "1.0.0",
+  "description": "The students laptop had to be reformatted due to security updates which resulted in the sequencer code written by the student to be lost. This will have to be rewritten.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "nan": "^2.14.2",
+    "node-addon-api": "^4.0.0",
+    "node-gyp": "^8.1.0",
+    "nodemon": "^2.0.7",
+    "python-shell": "^3.0.0",
+    "socket.io": "^4.1.1",
+    "socket.io-client": "^4.1.2",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxshugar/workflow_engine.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/maxshugar/workflow_engine/issues"
+  },
+  "homepage": "https://github.com/maxshugar/workflow_engine#readme"
+}
