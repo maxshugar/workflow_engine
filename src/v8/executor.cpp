@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <sstream>
 
 using v8::Context;
 using v8::EscapableHandleScope;
@@ -51,46 +52,33 @@ string ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
   string exception_str = string(ToCString(exception));
   v8::Local<v8::Message> message = try_catch->Message();
   if (message.IsEmpty()) {
-    // V8 didn't provide any extra information about this error; just
-    // print the exception.
     return exception_str;
   } else {
-    // Print (filename):(line number): (message).
-    v8::String::Utf8Value filename(isolate,
-                                   message->GetScriptOrigin().ResourceName());
+    v8::String::Utf8Value filename(isolate, message->GetScriptOrigin().ResourceName());
     v8::Local<v8::Context> context(isolate->GetCurrentContext());
     string filename_str = string(*filename);
     string linenum_str = to_string(message->GetLineNumber(context).FromJust());
-
-    string response = filename_str + ":" + linenum_str + ": " + exception_str + "\n";
-
-    // Print line of source code.
-    v8::String::Utf8Value sourceline(
-        isolate, message->GetSourceLine(context).ToLocalChecked());
+    std::stringstream response; response << filename_str << ":"
+      << linenum_str << ": " << exception_str << "\n";
+    v8::String::Utf8Value sourceline(isolate, message->GetSourceLine(context)
+      .ToLocalChecked());
     const char* sourceline_string = ToCString(sourceline);
     fprintf(stderr, "%s\n", sourceline_string);
-    response.append(sourceline_string);
-    response.append("\n");
-    // Print wavy underline (GetUnderline is deprecated).
+    response << string(sourceline_string) << "\n";
     int start = message->GetStartColumn(context).FromJust();
-    for (int i = 0; i < start; i++) {
-      response.append(" ");
-    }
+    for (int i = 0; i < start; i++) response << " ";
     int end = message->GetEndColumn(context).FromJust();
-    for (int i = start; i < end; i++) {
-      response.append("^");
-    }
-    response.append("\n");
+    for (int i = start; i < end; i++) response << "^";
+    response << "\n";
     v8::Local<v8::Value> stack_trace_string;
-    if (try_catch->StackTrace(context).ToLocal(&stack_trace_string) &&
-        stack_trace_string->IsString() &&
-        stack_trace_string.As<v8::String>()->Length() > 0) {
+    if (try_catch->StackTrace(context).ToLocal(&stack_trace_string) 
+      && stack_trace_string->IsString() 
+      && stack_trace_string.As<v8::String>()->Length() > 0) {
       v8::String::Utf8Value stack_trace(isolate, stack_trace_string);
       const char* stack_trace_string = ToCString(stack_trace);
-      response.append(stack_trace_string);
-      response.append("\n");
+      response << string(stack_trace_string) << "\n";
     }
-    return response;
+    return response.str();
   }
 }
 

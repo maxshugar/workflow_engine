@@ -46,11 +46,6 @@ static void LogCallback(const v8::FunctionCallbackInfo<v8::Value>& args) {
   HandleScope scope(isolate);
   Local<Value> arg = args[0];
   String::Utf8Value value(isolate, arg);
-
-  std::initializer_list<napi_value>& val {dataString};
-
-  //emit.Call();
-
   printf("log: %s\n", *value);
 }
 
@@ -64,26 +59,13 @@ string ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
     v8::String::Utf8Value filename(isolate,
                                    message->GetScriptOrigin().ResourceName());
     v8::Local<v8::Context> context(isolate->GetCurrentContext());
-    string filename_str = string(*filename);
     string linenum_str = to_string(message->GetLineNumber(context).FromJust());
     string response = filename_str + ":" + linenum_str + ": " + exception_str + "\n";
-    // Print line of source code.
     v8::String::Utf8Value sourceline(
         isolate, message->GetSourceLine(context).ToLocalChecked());
     const char* sourceline_string = ToCString(sourceline);
-    fprintf(stderr, "%s\n", sourceline_string);
     response.append(sourceline_string);
-    response.append("\n");
-    // Print wavy underline (GetUnderline is deprecated).
     int start = message->GetStartColumn(context).FromJust();
-    for (int i = 0; i < start; i++) {
-      response.append(" ");
-    }
-    int end = message->GetEndColumn(context).FromJust();
-    for (int i = start; i < end; i++) {
-      response.append("^");
-    }
-    response.append("\n");
     v8::Local<v8::Value> stack_trace_string;
     if (try_catch->StackTrace(context).ToLocal(&stack_trace_string) &&
         stack_trace_string->IsString() &&
@@ -91,7 +73,6 @@ string ReportException(v8::Isolate* isolate, v8::TryCatch* try_catch) {
       v8::String::Utf8Value stack_trace(isolate, stack_trace_string);
       const char* stack_trace_string = ToCString(stack_trace);
       response.append(stack_trace_string);
-      response.append("\n");
     }
     return response;
 }

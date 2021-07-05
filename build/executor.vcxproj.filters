@@ -147,7 +147,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\v8\emitter.cpp">
+    <ClCompile Include="..\src\v8\executor.cpp">
       <Filter>..\src\v8</Filter>
     </ClCompile>
     <ClCompile Include="C:\Program Files\nodejs\node_modules\npm\node_modules\node-gyp\src\win_delay_load_hook.cc">

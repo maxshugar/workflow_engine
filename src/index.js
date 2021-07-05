@@ -16,10 +16,22 @@ const v8Socket = require("socket.io")(8001, {
   },
 });
 
-const {spawn, execFile} = require("child_process");
-const path = require("path"); 
+// Hello, in this video demonstration I will be presenting a prototype process execution engine, which aims to provide developers with an environment 
+// that can test any type of electronic product produced at Sony UK. The system consists of script execution engine which runs on raspberry pis configured as IoT devices 
+// situated around the factories production floor
+// a REST API deployed within the factory network and web based integrated development environment.
 
-const Sequencer = require('./sequencer');
+// Home page - Here we have applications home page which provides the user with a clear explanation of the applications purpose, and the benefit it brings to the business.
+
+// Sign in - From here, the user can sign in by clicking the 
+
+// Now that we have created two nodes, we can write a script for each by selecting a node and then using the 
+
+
+const {spawn, execFile} = require("child_process");
+const path = require("path");  
+
+const Sequencer = require('./sequencer'); 
   
 const handleChildProcessIO = (child, externalSocket) => {
   child.stdout.on("data", function (data) {
@@ -33,7 +45,7 @@ const handleChildProcessIO = (child, externalSocket) => {
   child.on('exit', function (code) {
     console.log(`code:\n${code}`);
       externalSocket.emit("state", {state: 'STATE_ABORTED', code});
-  });   
+  });    
 } 
 
 let _pySocket = null; 
@@ -65,16 +77,19 @@ pySocket.on("connection", (pySocket) => {
 
 v8Socket.on("connection", (v8Socket) => {
   console.log("v8 socket connected");
-  _v8Socket = v8Socket;
+  _v8Socket = v8Socket; 
   v8Socket.on("state", (state) => {
     console.log({state})
       if(_externalSocket != null)
         _externalSocket.emit("state", state);
   }); 
   v8Socket.on("err", (err) => {
-    console.log(err)
-    if(_externalSocket != null)
+    console.log({err})
+    if(_externalSocket != null){
       _externalSocket.emit("error", err);
+      _externalSocket.emit("state", {state: 'STATE_IDLE', engineType: 'javascript'});
+    }
+      
 });     
 });   
   
@@ -93,7 +108,7 @@ externalSocket.on("connection", (externalSocket) => {
       _v8Socket.emit("run", {script});
     } else{
       _pySocket.emit("run", {script}); 
-    }
+    } 
   });  
   externalSocket.on("debug", (data) => {
     // console.log('debug command recieved.')
@@ -115,7 +130,7 @@ externalSocket.on("connection", (externalSocket) => {
   // Get the state of the python debugger.
   externalSocket.on("getState", () => {
       if(_pySocket != null) 
-        _pySocket.emit("getState");
+        _pySocket.emit("getState"); 
   });   
   externalSocket.on("addBreakpoint", (lineNumber) => {
     _pySocket.emit("addBreakpoint", lineNumber);

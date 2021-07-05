@@ -25,18 +25,12 @@ module.exports = (id, code, language = 'python', externalSocket, name, type) => 
     run() {
       
       const _this = this;
-
       const predecessorIds = [];
- 
       // Ensure all dependencies have completed before beginning.
       for (let i = 0; i < this.predecessors.length; i++) {
         const predecessor = this.predecessors[i];
-        //console.log(predecessor)
         predecessorIds.push(predecessor.id); 
-        if (predecessor.state != states.STATE_SEQ_TASK_COMPLETE) {
-          // console.log(`${_this.id} recieved run signal, waiting for ${predecessor.id} to complete`);
-          return;
-        } 
+        if (predecessor.state != states.STATE_SEQ_TASK_COMPLETE) return;
       }
       
       if(this.type === 'EndNode'){
@@ -77,15 +71,18 @@ module.exports = (id, code, language = 'python', externalSocket, name, type) => 
             _this.socket.emit("data", `[${_this.name}] ${data.toString()}`);
           });
           v8.stderr.on("data", (err) => {
+            _this.socket.emit("error", `[${_this.name}] ${err.toString()}`);
             _this.state = states.STATE_SEQ_TASK_ERROR;
             _this.socket.emit("sequencerState", {state: _this.state, taskId: _this.id, name: _this.name});
-            _this.socket.emit("error", `[${_this.name}] ${err.toString()}`);
           });
           v8.on("exit", function (code) {
             if (_this.state !== states.STATE_SEQ_TASK_ERROR) {
               _this.state = states.STATE_SEQ_TASK_COMPLETE;
               _this.socket.emit("sequencerState", {state: _this.state, taskId: _this.id, name: _this.name});
               _this.notifySuccessors();
+            } else {
+              _this.state = states.STATE_SEQ_COMPLETE;
+              _this.socket.emit("sequencerState", {state: _this.state});
             }
           });
         }

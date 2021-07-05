@@ -126,7 +126,7 @@ d = debugger(sio)
 @sio.event
 def connect():
     d.breakpoints = []
-    sio.emit("state", {"state": d.state})  
+    sio.emit("state", {"state": d.state, "engineType": "python"})  
 
 @sio.event
 def run(data):
@@ -141,7 +141,7 @@ def run(data):
     sio.emit("state", {"state": d.state, "sid": sio.sid})
     d.state = states.STATE_IDLE.name
     time.sleep(0.1)
-    sio.emit("state", {"state": d.state, "sid": sio.sid})
+    sio.emit("state", {"state": d.state, "sid": sio.sid, "engineType": "python"})
 
 @sio.event 
 def debug(data):
@@ -156,7 +156,7 @@ def debug(data):
     sio.emit("state", {"state": d.state, "sid": sio.sid})
     d.state = states.STATE_IDLE.name
     time.sleep(0.1)
-    sio.emit("state", {"state": d.state, "sid": sio.sid})
+    sio.emit("state", {"state": d.state, "sid": sio.sid, "engineType": "python"})
 
 @sio.event
 def getState(): 

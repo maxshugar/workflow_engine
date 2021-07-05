@@ -3,7 +3,7 @@ const socket = io("http://localhost:8001");
 
 const vm = require('vm');
 socket.on("connect", () => {
-    socket.emit("state", {state: 'STATE_IDLE'});
+    socket.emit("state", {state: 'STATE_IDLE', engineType: "javascript"});
 });
 
 socket.on("run", async ({script}) => {
@@ -16,6 +16,8 @@ socket.on("run", async ({script}) => {
         await vm.runInNewContext(script, sandbox);
         await delay(100);
         socket.emit("state", {state: 'STATE_COMPLETE'});
+        await delay(100);
+        socket.emit("state", {state: 'STATE_IDLE', engineType: 'javascript'});
 
     } catch(err) {
         socket.emit("err", err.toString());
@@ -27,3 +29,4 @@ socket.on("run", async ({script}) => {
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 
+ 

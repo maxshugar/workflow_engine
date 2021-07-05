@@ -10,6 +10,7 @@
         "xlocmon": "cpp",
         "xlocnum": "cpp",
         "xtr1common": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "xstring": "cpp"
     }
 }

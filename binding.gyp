@@ -2,7 +2,7 @@
   "targets": [
     {
       "target_name": "executor",
-      "sources": [ "src/v8/emitter.cpp" ],
+      "sources": [ "src/v8/executor.cpp" ],
       "include_dirs" : [
 		    "<!(node -p \"require('node-addon-api').include_dir\")"
 		  ],
